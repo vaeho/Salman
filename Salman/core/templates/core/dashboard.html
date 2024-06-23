@@ -1,0 +1,143 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block head %}
+    <!-- Include Chart.js and Tailwind CSS from CDN -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.0.1/chart.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.0.1/chart.umd.min.js"></script>  <!-- Ensure UMD build -->
+{% endblock %}
+
+{% block content %}
+<div class="p-4 lg:ml-64">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
+        <!-- Total Salons Card -->
+        <div class="bg-white shadow-md rounded-lg p-4">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <svg class="h-10 w-10 text-blue-500" fill="currentColor" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                        <path d="M12 2a9.986 9.986 0 0 1 9.95 9.498A9.986 9.986 0 0 1 12 22a9.986 9.986 0 0 1-9.95-9.502A9.986 9.986 0 0 1 12 2zm0 2a7.984 7.984 0 0 0-7.948 7.206l3.192 1.422A1.5 1.5 0 0 1 10.5 13h3a1.5 1.5 0 0 1 1.256 2.628l3.192 1.422A7.985 7.985 0 0 0 12 4zm-.75 5.333a1.167 1.167 0 1 1 0-2.334 1.167 1.167 0 0 1 0 2.334zm0 6.667a1.167 1.167 0 1 1 0-2.334 1.167 1.167 0 0 1 0 2.334zm-4.5-3.333a1.167 1.167 0 1 1 0-2.334 1.167 1.167 0 0 1 0 2.334z"/>
+                    </svg>
+                </div>
+                <div class="ml-4">
+                    <h3 class="text-lg font-semibold">Total Salons</h3>
+                    <p class="text-2xl font-bold">{{ total_salons }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Employees Card -->
+        <div class="bg-white shadow-md rounded-lg p-4">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <svg class="h-10 w-10 text-green-500" fill="currentColor" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                        <path d="M12 2a9.986 9.986 0 0 1 9.95 9.498A9.986 9.986 0 0 1 12 22a9.986 9.986 0 0 1-9.95-9.502A9.986 9.986 0 0 1 12 2zm0 2a7.984 7.984 0 0 0-7.948 7.206l3.192 1.422A1.5 1.5 0 0 1 10.5 13h3a1.5 1.5 0 0 1 1.256 2.628l3.192 1.422A7.985 7.985 0 0 0 12 4zm-.75 5.333a1.167 1.167 0 1 1 0-2.334 1.167 1.167 0 0 1 0 2.334zm0 6.667a1.167 1.167 0 1 1 0-2.334 1.167 1.167 0 0 1 0 2.334zm-4.5-3.333a1.167 1.167 0 1 1 0-2.334 1.167 1.167 0 0 1 0 2.334z"/>
+                    </svg>
+                </div>
+                <div class="ml-4">
+                    <h3 class="text-lg font-semibold">Total Employees</h3>
+                    <p class="text-2xl font-bold">{{ total_employees }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Bookings Card -->
+        <div class="bg-white shadow-md rounded-lg p-4">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <svg class="h-10 w-10 text-red-500" fill="currentColor" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                        <path d="M21 10.1V4a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v1H9V4a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v6.1A6.983 6.983 0 0 0 3 10a6.985 6.985 0 0 0-1 13.9h19a6.985 6.985 0 0 0 1-13.8zM5 5h3v5H5zm11 0h3v5h-3z"/>
+                    </svg>
+                </div>
+                <div class="ml-4">
+                    <h3 class="text-lg font-semibold">Total Bookings</h3>
+                    <p class="text-2xl font-bold">{{ total_bookings }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Customers Card -->
+        <div class="bg-white shadow-md rounded-lg p-4">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <svg class="h-10 w-10 text-yellow-500" fill="currentColor" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                        <path d="M12 2a9.986 9.986 0 0 1 9.95 9.498A9.986 9.986 0 0 1 12 22a9.986 9.986 0 0 1-9.95-9.502A9.986 9.986 0 0 1 12 2zm0 2a7.984 7.984 0 0 0-7.948 7.206l3.192 1.422A1.5 1.5 0 0 1 10.5 13h3a1.5 1.5 0 0 1 1.256 2.628l3.192 1.422A7.985 7.985 0 0 0 12 4zm-.75 5.333a1.167 1.167 0 1 1 0-2.334 1.167 1.167 0 0 1 0 2.334zm0 6.667a1.167 1.167 0 1 1 0-2.334 1.167 1.167 0 0 1 0 2.334zm-4.5-3.333a1.167 1.167 0 1 1 0-2.334 1.167 1.167 0 0 1 0 2.334z"/>
+                    </svg>
+                </div>
+                <div class="ml-4">
+                    <h3 class="text-lg font-semibold">Total Customers</h3>
+                    <p class="text-2xl font-bold">{{ total_customers }}</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+        <!-- Recent Bookings -->
+        <div class="bg-white shadow-md rounded-lg p-4">
+            <h3 class="text-lg font-semibold mb-4">Recent Bookings</h3>
+            <ul class="divide-y divide-gray-200">
+                {% for booking in recent_bookings %}
+                <li class="py-4 flex">
+                    <div class="flex-shrink-0">
+                        <svg class="h-6 w-6 text-gray-500" fill="currentColor" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                            <path d="M4 2h16a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/>
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm font-medium text-gray-900">{{ booking.service.name }}</p>
+                        <p class="text-sm text-gray-500">Customer: {{ booking.customer.first_name }} {{ booking.customer.last_name }}</p>
+                        <p class="text-sm text-gray-500">Date: {{ booking.date }}</p>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div class="bg-white shadow-md rounded-lg p-4">
+            <h3 class="text-lg font-semibold mb-4">Customer Insights</h3>
+            <div class="relative">
+                <canvas id="customerChart" class="w-full h-64"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof Chart === 'undefined') {
+        console.error('Chart.js is not loaded.');
+        return; 
+    }
+
+    var ctx = document.getElementById('customerChart').getContext('2d');
+    var chart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: {{ customer_insights.labels|safe }},
+            datasets: [{
+                label: 'Customer Insights',
+                data: {{ customer_insights.data|safe }},
+                backgroundColor: ['#ff6384', '#36a2eb', '#ffce56'],
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,  // Maintain the aspect ratio
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+                tooltip: {
+                    enabled: true,
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}  

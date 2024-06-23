@@ -1,0 +1,232 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}Manage Employees{% endblock %}
+
+{% block content %}
+<div class="p-4 lg:ml-64" x-data="employeeForm()">
+    <div class="bg-white shadow-md rounded-lg p-6">
+        <h2 class="text-3xl font-semibold text-gray-800 mb-6">Manage Employees</h2>
+        
+        <!-- Notification area -->
+        <div x-show="notification.show" x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0 transform scale-90"
+             x-transition:enter-end="opacity-100 transform scale-100"
+             x-transition:leave="transition ease-in duration-300"
+             x-transition:leave-start="opacity-100 transform scale-100"
+             x-transition:leave-end="opacity-0 transform scale-90"
+             :class="{'bg-green-100 border-green-400 text-green-700': notification.type === 'success',
+                      'bg-red-100 border-red-400 text-red-700': notification.type === 'error'}"
+             class="border-l-4 p-4 mb-4">
+            <p x-text="notification.message"></p>
+        </div>
+
+        <div class="mb-4">
+            <button @click="addNewEmployee" class="py-2 px-4 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700">
+                Add New Employee
+            </button>
+        </div>
+        
+        <div id="employees-wrapper" class="space-y-6 max-h-fit overflow-y-auto">
+            <template x-for="(employee, index) in employees" :key="employee.id">
+                <div class="p-4 inline-grid m-4 min-h-96 justify-between bg-gray-50 border border-gray-200 rounded-lg space-y-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label :for="'employee-first-name-' + index" class="block text-sm font-medium text-gray-700">First Name</label>
+                            {{ form.first_name|attr:"x-model:employee.first_name"|attr:"placeholder:Enter First Name"|attr:"class:py-3 px-4 block w-full border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500" }}
+                        </div>
+                        <div>
+                            <label :for="'employee-last-name-' + index" class="block text-sm font-medium text-gray-700">Last Name</label>
+                            {{ form.last_name|attr:"x-model:employee.last_name"|attr:"placeholder:Enter Last Name"|attr:"class:py-3 px-4 block w-full border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500" }}
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label :for="'employee-phone-' + index" class="block text-sm font-medium text-gray-700">Phone Number</label>
+                            {{ form.phone_number|attr:"x-model:employee.phone_number"|attr:"placeholder:Enter Phone Number"|attr:"class:py-3 px-4 block w-full border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500" }}
+                        </div>
+                        <div>
+                            <label :for="'employee-role-' + index" class="block text-sm font-medium text-gray-700">Role</label>
+                            {{ form.role|attr:"x-model:employee.role"|attr:"placeholder:Enter Role"|attr:"class:py-3 px-4 block w-full border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500" }}
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Services</label>
+                        <div class="space-y-2">
+                            <template x-for="(service, serviceIndex) in employee.services" :key="service.id">
+                                <div class="flex items-center justify-between w-96 bg-white p-2 rounded">
+                                    <span x-text="service.name"></span>
+                                    <button @click="removeService(employee, serviceIndex)" class="text-red-600 hover:text-red-800">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                    </button>
+                                </div>
+                            </template>
+                        </div>
+                        <div class="mt-2">
+                            <select @change="addService(employee, $event.target.value)" class="py-2 px-3 pe-9 block w-96 border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500">
+                                <option value="">Add a service</option>
+                                <template x-for="availableService in getAvailableServices(employee)" :key="availableService.id">
+                                    <option :value="availableService.id" x-text="availableService.name"></option>
+                                </template>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="flex justify-end space-x-2">
+                        <button @click="removeEmployee(index)" class="py-1.5 px-2 inline-flex items-center gap-x-1 text-xs font-medium rounded-full border border-red-200 bg-white text-red-800 hover:bg-red-50">
+                            Remove Employee
+                        </button>
+                        <button @click="saveEmployee(employee)" class="py-1.5 px-2 inline-flex items-center gap-x-1 text-xs font-medium rounded-full border border-green-200 bg-white text-green-800 hover:bg-green-50">
+                            Save Changes
+                        </button>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
+</div>
+
+{{ existing_employees|json_script:"existing-employees-data" }}
+{{ services|json_script:"services-data" }}
+
+<script>
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('employeeForm', () => ({
+            employees: [],
+            availableServices: [],
+            notification: {
+                show: false,
+                message: '',
+                type: 'success'
+            },
+            
+            getAvailableServices(employee) {
+                return this.availableServices.filter(service => 
+                    !employee.services.some(employeeService => employeeService.id === service.id)
+                );
+            },
+
+            init() {
+                const existingEmployeesData = document.getElementById('existing-employees-data');
+                const servicesData = document.getElementById('services-data');
+                
+                this.employees = existingEmployeesData ? JSON.parse(existingEmployeesData.textContent) : [];
+                
+                if (!Array.isArray(this.employees)) {
+                    console.warn('Employees data is not an array. Initializing as empty array.');
+                    this.employees = [];
+                }
+                
+                this.availableServices = servicesData ? JSON.parse(servicesData.textContent) : [];
+                
+                // Ensure services are properly formatted
+                this.employees.forEach(employee => {
+                    employee.services = employee.services.map(service => {
+                        return typeof service === 'object' ? service : { id: service, name: 'Unknown Service' };
+                    });
+                });
+            },
+
+            addNewEmployee() {
+                const newId = 'new-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+                this.employees.unshift({ id: newId, first_name: '', last_name: '', phone_number: '', role: '', services: [] });
+            },
+
+            removeEmployee(index) {
+                const employee = this.employees[index];
+                if (employee.id && !employee.id.startsWith('new-')) {
+                    this.deleteEmployee(employee.id);
+                } else {
+                    this.employees.splice(index, 1);
+                    this.showNotification('Employee removed', 'success');
+                }
+            },
+
+            addService(employee, serviceId) {
+                if (serviceId) {
+                    const service = this.availableServices.find(s => s.id === parseInt(serviceId));
+                    if (service && !employee.services.some(s => s.id === service.id)) {
+                        employee.services.push(service);
+                    }
+                }
+            },
+
+            removeService(employee, index) {
+                employee.services.splice(index, 1);
+            },
+
+            async saveEmployee(employee) {
+                try {
+                    const employeeData = {
+                        ...employee,
+                        services: employee.services.map(s => s.id)
+                    };
+                    const formData = new FormData();
+                    formData.append('employee', JSON.stringify(employeeData));
+            
+                    const response = await fetch('{% url "save_employee" %}', {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': '{{ csrf_token }}',
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                        body: formData
+                    });
+            
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+            
+                    const data = await response.json();
+            
+                    if (data.employee) {
+                        const index = this.employees.findIndex(e => e.id === data.employee.id);
+                        if (index !== -1) {
+                            this.employees[index] = data.employee;
+                        } else {
+                            this.employees.push(data.employee);
+                        }
+                    }
+            
+                    this.showNotification('Employee saved successfully!', 'success');
+                } catch (error) {
+                    console.error('Error saving employee:', error);
+                    this.showNotification('Error saving employee. Please try again.', 'error');
+                }
+            },
+
+            async deleteEmployee(employeeId) {
+                try {
+                    const response = await fetch(`{% url "delete_employee" %}?id=${employeeId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'X-CSRFToken': '{{ csrf_token }}',
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    this.employees = this.employees.filter(e => e.id !== employeeId);
+                    this.showNotification('Employee deleted successfully!', 'success');
+                } catch (error) {
+                    console.error('Error deleting employee:', error);
+                    this.showNotification('Error deleting employee. Please try again.', 'error');
+                }
+            },
+
+            showNotification(message, type = 'success') {
+                this.notification.show = true;
+                this.notification.message = message;
+                this.notification.type = type;
+
+                setTimeout(() => {
+                    this.notification.show = false;
+                }, 3000);
+            }
+        }));
+    });
+</script>
+{% endblock %}

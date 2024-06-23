@@ -1,0 +1,171 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}Manage Services{% endblock %}
+
+{% block content %}
+<div class="p-4 lg:ml-64" x-data="serviceForm()">
+    <div class="bg-white shadow-md rounded-lg p-6">
+        <h2 class="text-3xl font-semibold text-gray-800 mb-6">Manage Services</h2>
+        
+        <!-- Notification area -->
+        <div x-show="notification.show" x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0 transform scale-90"
+             x-transition:enter-end="opacity-100 transform scale-100"
+             x-transition:leave="transition ease-in duration-300"
+             x-transition:leave-start="opacity-100 transform scale-100"
+             x-transition:leave-end="opacity-0 transform scale-90"
+             :class="{'bg-green-100 border-green-400 text-green-700': notification.type === 'success',
+                      'bg-red-100 border-red-400 text-red-700': notification.type === 'error'}"
+             class="border-l-4 p-4 mb-4">
+            <p x-text="notification.message"></p>
+        </div>
+
+        <div class="mb-4">
+            <button @click="addNewService" class="py-2 px-4 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700">
+                Add New Service
+            </button>
+        </div>
+        
+        <div id="services-wrapper" class="space-y-6 max-h-fit overflow-y-auto">
+            <template x-for="(service, index) in services" :key="service.id">
+                <div class="p-4 inline-grid m-4 min-h-96 justify-between bg-gray-50 border border-gray-200 rounded-lg space-y-3">
+                    <div>
+                        <label :for="'service-name-' + index" class="block text-sm font-medium text-gray-700">Service Name</label>
+                        {{ form.name|attr:"x-model:service.name"|attr:"placeholder:Enter Service Name"|attr:"class:py-3 px-4 block w-full border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500" }}
+                    </div>
+                    <div>
+                        <label :for="'service-description-' + index" class="block text-sm font-medium text-gray-700">Description</label>
+                        {{ form.description|attr:"x-model:service.description"|attr:"placeholder:Enter Description"|attr:"class:py-3 px-4 block w-full border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500 max-h-32 overflow-y-auto"|attr:"rows:3" }}
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label :for="'service-price-' + index" class="block text-sm font-medium text-gray-700">Price ($)</label>
+                            {{ form.price|attr:"x-model:service.price"|attr:"placeholder:Enter Price"|attr:"class:py-3 px-4 block w-full border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500"|attr:"step:0.01" }}
+                        </div>
+                        <div>
+                            <label :for="'service-duration-' + index" class="block text-sm font-medium text-gray-700">Duration (minutes)</label>
+                            {{ form.duration|attr:"x-model:service.duration"|attr:"placeholder:Enter Duration"|attr:"class:py-3 px-4 block w-full border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500" }}
+                        </div>
+                    </div>
+                    <div class="flex justify-end space-x-2">
+                        <button @click="removeService(index)" class="py-1.5 px-2 inline-flex items-center gap-x-1 text-xs font-medium rounded-full border border-red-200 bg-white text-red-800 hover:bg-red-50">
+                            Remove Service
+                        </button>
+                        <button @click="saveService(service)" class="py-1.5 px-2 inline-flex items-center gap-x-1 text-xs font-medium rounded-full border border-green-200 bg-white text-green-800 hover:bg-green-50">
+                            Save Changes
+                        </button>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
+</div>
+
+{{ existing_services|json_script:"existing-services-data" }}
+
+<script>
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('serviceForm', () => ({
+            services: [],
+            notification: {
+                show: false,
+                message: '',
+                type: 'success'
+            },
+
+            init() {
+                const existingServicesData = document.getElementById('existing-services-data');
+                this.services = existingServicesData ? JSON.parse(existingServicesData.textContent) : [];
+                this.services = this.services.map(service => ({
+                    id: service.pk.toString(),
+                    ...service.fields
+                }));
+            },
+
+            addNewService() {
+                const newId = 'new-' + Date.now();
+                this.services.unshift({ id: newId, name: '', description: '', price: '', duration: '' });
+            },
+
+            removeService(index) {
+                const service = this.services[index];
+                if (service.id && !service.id.startsWith('new-')) {
+                    this.deleteService(service.id);
+                } else {
+                    this.services.splice(index, 1);
+                    this.showNotification('Service removed', 'success');
+                }
+            },
+
+            async saveService(service) {
+                try {
+                    const formData = new FormData();
+                    formData.append('service', JSON.stringify(service));
+
+                    const response = await fetch('{% url "save_service" %}', {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': '{{ csrf_token }}',
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                        body: formData
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    
+                    const index = this.services.findIndex(s => s.id === service.id);
+                    if (index !== -1) {
+                        this.services[index] = data.service;
+                    } else {
+                        this.services.push(data.service);
+                    }
+
+                    this.showNotification('Service saved successfully!', 'success');
+                } catch (error) {
+                    console.error('Error saving service:', error);
+                    this.showNotification('Error saving service. Please try again.', 'error');
+                }
+            },
+
+            async deleteService(serviceId) {
+                try {
+                    const response = await fetch(`{% url "delete_service" %}?id=${serviceId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'X-CSRFToken': '{{ csrf_token }}',
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    this.services = this.services.filter(s => s.id !== serviceId);
+                    this.showNotification('Service deleted successfully!', 'success');
+                } catch (error) {
+                    console.error('Error deleting service:', error);
+                    this.showNotification('Error deleting service. Please try again.', 'error');
+                }
+            },
+
+            showNotification(message, type = 'success') {
+                this.notification.show = true;
+                this.notification.message = message;
+                this.notification.type = type;
+
+                setTimeout(() => {
+                    this.notification.show = false;
+                }, 3000);
+            }
+        }));
+    });
+</script>
+
+{% endblock %}
