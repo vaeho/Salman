@@ -62,7 +62,7 @@ def dashboard_view(request):
     total_bookings = Booking.objects.filter(business=current_user).count()
     total_customers = Customer.objects.filter(business=current_user).count()
 
-    recent_bookings = Booking.objects.filter(business=current_user).order_by('-date')[:5]
+    #recent_bookings = Booking.objects.filter(business=current_user).order_by('-date')[:5]
 
     # Example dynamic data for customer insights
     customer_insights = {
@@ -75,7 +75,7 @@ def dashboard_view(request):
         'total_employees': total_employees,
         'total_bookings': total_bookings,
         'total_customers': total_customers,
-        'recent_bookings': recent_bookings,
+        #'recent_bookings': recent_bookings,
         'customer_insights': customer_insights,
     }
 
